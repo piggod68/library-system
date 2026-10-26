@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>取数据</title>
+</head>
+<body>
+
+  <button id="btn">拉取图书</button>
+  <pre id="out">还没拉</pre>
+
+  <script>
+    const btn = document.getElementById("btn");
+    const out = document.getElementById("out");
+
+    btn.addEventListener("click", async function () {
+      const res = await fetch("http://127.0.0.1:8000/books");
+      const data = await res.json();
+      out.textContent = JSON.stringify(data, null, 2);
+    });
+  </script>
+
+</body>
+</html>

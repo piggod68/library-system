@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>借书</title>
+<style>
+    body {
+        font-family:"Microsoft YaHei", sans-serif;
+        max-width: 420px;
+        margin: 40px auto;
+        padding: 0 16px;
+        color: #a20505;
+    }
+    h1 { font-size: 50px;color: #999c18; }
+    label { display: inline-block; width: 78px; color: #555; }
+  input, textarea {
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 200px;
+    font-size: 14px;
+  }
+  button {
+    padding: 8px 20px;
+    background: #17365D;
+    color: #fff;
+    border: none;
+    border-radius: 90px;
+    cursor: pointer;
+  }
+</style>
+    
+</head>
+<body>
+    <h1>借书</h1>
+    <form id="borrowFrom">
+        <p>
+            <label for="isbn">书号：</label>
+            <input id="isbn" name="isbn" type="text" required placeholder="例如: a001"> 
+        </p>
+        <p>    
+        <label for="reader">读者姓名</label>
+            <input id="reader" name="reader" type="text" required>
+        </p>
+        <p>
+            <label for="date">借书日期</label>
+            <input id="date" name="date" type="date">
+        </p>
+        <p>
+            <label for="desc">备注</label>
+            <textarea id="desc" name="desc" rows="3"></textarea>
+        </p>
+        <button type="submit">借出</button>
+        <button type="button" id="returnBtn">还书</button>
+    </form>
+    <p id="result"></p>
+
+    <script>
+        const from = document.getElementById("borrowFrom");
+        const result = document.getElementById("result");
+
+        from.addEventListener("submit",async function(e){
+            e.preventDefault();
+
+            const isbn = document.getElementById("isbn").value;
+
+            const res = await fetch("http://127.0.0.1:8000/borrow/" + isbn,{
+                method: "POST"
+            });
+            const data = await res.json();
+            result.textContent = data.msg;
+        })
+        const returnBtn = document.getElementById("returnBtn");
+
+        returnBtn.addEventListener("click",async function(){
+           const isbn = document.getElementById("isbn").value;
+
+           const res = await fetch("http://127.0.0.1:8000/return/"+isbn,{
+            method:"POST"
+           })
+           const data = await res.json();
+           result.textContent = data.msg;
+        })
+        </script>
+</body>
+</html>
