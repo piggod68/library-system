@@ -80,7 +80,13 @@ def return_book(isbn: str):
     conn.commit()
     conn.close()
     return {"ok": True, "msg": "还书成功"}
-
-
+@app.get("/search/{keyword}")
+def search(keyword: str):
+    conn = 打开数据库()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM books WHERE title LIKE ?", ("%" + keyword + "%",))
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return rows
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
