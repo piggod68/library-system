@@ -35,6 +35,15 @@ def get_books():
     return rows
 
 
+@app.get("/books/available")
+def get_available():
+    conn = 打开数据库()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM books WHERE stock >0")
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return rows
+
 @app.get("/books/{isbn}")
 def get_book(isbn: str):
     conn = 打开数据库()
@@ -88,5 +97,7 @@ def search(keyword: str):
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
     return rows
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
