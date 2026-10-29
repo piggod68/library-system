@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 import uvicorn
 import sqlite3
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -18,6 +19,12 @@ def 打开数据库():
     conn = sqlite3.connect("books.db")
     conn.row_factory = sqlite3.Row
     return conn
+    
+class BookIn(BaseModel):
+    isbn: str
+    title: str
+    stock: int
+  
 
 
 @app.get("/hello")
@@ -98,6 +105,17 @@ def search(keyword: str):
     conn.close()
     return rows
 
+@app.post("/books")
+def  create_book(book: BookIn):
+    conn = 打开数据库()
+    cur = conn.cursor() 
+    cur.execute(
+        "INSERT INTO books (isbn,title,stock) VALUES (?, ?, ?)",
+        (book.isbn,book.title,book.stock),
+    )
+    conn.commit()
+    conn.close()
+    return {"ok":True,"msg":f"新增成功： 《{book.title}》"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
