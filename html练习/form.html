@@ -28,17 +28,27 @@
     border-radius: 90px;
     cursor: pointer;
   }
+  h2 { font-size: 20px; margin-top: 32px; }
+  #bookList { list-style: none; padding: 0; }
+  #bookList li {
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    color: #333;
+    font-size: 14px;
+  }
 </style>
-    
+
 </head>
 <body>
     <h1>借书</h1>
     <form id="borrowFrom">
         <p>
             <label for="isbn">书号：</label>
-            <input id="isbn" name="isbn" type="text" required placeholder="例如: a001"> 
+            <input id="isbn" name="isbn" type="text" required placeholder="例如: a001">
         </p>
-        <p>    
+        <p>
         <label for="reader">读者姓名</label>
             <input id="reader" name="reader" type="text" required>
         </p>
@@ -55,32 +65,47 @@
     </form>
     <p id="result"></p>
 
+    <h2>图书列表</h2>
+    <ul id="bookList"></ul>
+
     <script>
         const from = document.getElementById("borrowFrom");
         const result = document.getElementById("result");
 
-        from.addEventListener("submit",async function(e){
+        async function loadBooks() {
+            const res = await fetch("http://127.0.0.1:8000/books");
+            const data = await res.json();
+            let html = "";
+            for (const b of data) {
+                html = html + "<li>" + b.title + " —— 库存 " + b.stock + " 本</li>";
+            }
+            document.getElementById("bookList").innerHTML = html;
+        }
+
+        from.addEventListener("submit", async function(e){
             e.preventDefault();
-
             const isbn = document.getElementById("isbn").value;
-
-            const res = await fetch("http://127.0.0.1:8000/borrow/" + isbn,{
+            const res = await fetch("http://127.0.0.1:8000/borrow/" + isbn, {
                 method: "POST"
             });
             const data = await res.json();
             result.textContent = data.msg;
+            loadBooks();
         })
+
         const returnBtn = document.getElementById("returnBtn");
 
-        returnBtn.addEventListener("click",async function(){
-           const isbn = document.getElementById("isbn").value;
-
-           const res = await fetch("http://127.0.0.1:8000/return/"+isbn,{
-            method:"POST"
-           })
-           const data = await res.json();
-           result.textContent = data.msg;
+        returnBtn.addEventListener("click", async function(){
+            const isbn = document.getElementById("isbn").value;
+            const res = await fetch("http://127.0.0.1:8000/return/" + isbn, {
+                method: "POST"
+            })
+            const data = await res.json();
+            result.textContent = data.msg;
+            loadBooks();
         })
-        </script>
+
+        loadBooks();
+    </script>
 </body>
 </html>
