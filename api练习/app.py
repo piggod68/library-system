@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 import uvicorn
-import sqlite3
+import mysql.connector
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import MYSQL_PASSWORD
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -16,8 +19,13 @@ app.add_middleware(
 
 
 def 打开数据库():
-    conn = sqlite3.connect("books.db")
-    conn.row_factory = sqlite3.Row
+    conn = mysql.connector.connect(
+        host="127.0.0.1",
+        port=3306,
+        user="root",
+        password=MYSQL_PASSWORD,
+        database="library",
+    )
     return conn
     
 class BookIn(BaseModel):
@@ -35,7 +43,7 @@ def hello():
 @app.get("/books")
 def get_books():
     conn = 打开数据库()
-    cur = conn.cursor()
+    cur = conn.cursor(dictionary=True)
     cur.execute("SELECT * FROM books")
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
@@ -45,7 +53,7 @@ def get_books():
 @app.get("/books/available")
 def get_available():
     conn = 打开数据库()
-    cur = conn.cursor()
+    cur = conn.cursor(dictionary=True)
     cur.execute("SELECT * FROM books WHERE stock >0")
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
@@ -54,8 +62,8 @@ def get_available():
 @app.get("/books/{isbn}")
 def get_book(isbn: str):
     conn = 打开数据库()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM books WHERE isbn = ?", (isbn,))
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM books WHERE isbn = %s", (isbn,))
     row = cur.fetchone()
     conn.close()
     if row is None:
@@ -65,8 +73,8 @@ def get_book(isbn: str):
 @app.post("/borrow/{isbn}")
 def borrow(isbn: str):
     conn = 打开数据库()
-    cur = conn.cursor()
-    cur.execute("SELECT stock FROM books WHERE isbn = ?", (isbn,))
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT stock FROM books WHERE isbn = %s", (isbn,))
     row = cur.fetchone()
 
     if row is None:
@@ -77,30 +85,30 @@ def borrow(isbn: str):
         conn.close()
         return {"ok": False, "msg": "这本书借完了"}
 
-    cur.execute("UPDATE books SET stock = stock - 1 WHERE isbn = ?", (isbn,))
+    cur.execute("UPDATE books SET stock = stock - 1 WHERE isbn = %s", (isbn,))
     conn.commit()
     conn.close()
     return {"ok": True, "msg": "借阅成功"}
 @app.post("/return/{isbn}")
 def return_book(isbn: str):
     conn = 打开数据库()
-    cur = conn.cursor()
-    cur.execute("SELECT stock FROM books WHERE isbn = ?", (isbn,))
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT stock FROM books WHERE isbn = %s", (isbn,))
     row = cur.fetchone()
 
     if row is None:
         conn.close()
         return {"ok": False, "msg": "没有这本书"}
 
-    cur.execute("UPDATE books SET stock = stock + 1 WHERE isbn = ?", (isbn,))
+    cur.execute("UPDATE books SET stock = stock + 1 WHERE isbn = %s", (isbn,))
     conn.commit()
     conn.close()
     return {"ok": True, "msg": "还书成功"}
 @app.get("/search/{keyword}")
 def search(keyword: str):
     conn = 打开数据库()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM books WHERE title LIKE ?", ("%" + keyword + "%",))
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM books WHERE title LIKE %s", ("%" + keyword + "%",))
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
     return rows
@@ -108,10 +116,10 @@ def search(keyword: str):
 @app.post("/books")
 def  create_book(book: BookIn):
     conn = 打开数据库()
-    cur = conn.cursor() 
+    cur = conn.cursor(dictionary=True) 
     try:
         cur.execute(
-            "INSERT INTO books (isbn,title,stock) VALUES (?, ?, ?)",
+            "INSERT INTO books (isbn,title,stock) VALUES (%s, %s, %s)",
             (book.isbn,book.title,book.stock),
        )
         conn.commit()
@@ -124,8 +132,8 @@ def  create_book(book: BookIn):
 @app.delete("/books/{isbn}")
 def delete_book(isbn: str):
     conn = 打开数据库()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM books WHERE isbn = ?",(isbn,))
+    cur = conn.cursor(dictionary=True)
+    cur.execute("DELETE FROM books WHERE isbn = %s",(isbn,))
 
     if cur.rowcount == 0:
         conn.close()

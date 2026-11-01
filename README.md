@@ -8,7 +8,7 @@
 |---|---|
 | 前端 | HTML + CSS + 原生 JavaScript（fetch） |
 | 后端 | FastAPI（Python） |
-| 数据库 | SQLite |
+| 数据库 | MySQL 8 |
 
 ## 功能
 
@@ -35,33 +35,49 @@
 | POST | `/borrow/{isbn}` | 借书 |
 | POST | `/return/{isbn}` | 还书 |
 
+## 前置要求
+
+- Python 3.9+
+- MySQL 8（本地安装并启动服务）
+
 ## 怎么跑
 
-**1. 装依赖**
+**1. 装 Python 依赖**
 
 ```bash
-pip install fastapi uvicorn
+pip install fastapi uvicorn mysql-connector-python
 ```
 
-**2. 建数据库（只有第一次需要）**
+**2. 建库（只有第一次需要）**
+
+先打开 `init_mysql.py`，把里面的 `PASSWORD` 改成你自己的 MySQL root 密码，然后：
 
 ```bash
-cd api练习
-python db.py
+python init_mysql.py
 ```
 
-会生成 `books.db`，并写入两本演示书。
+会创建数据库 `library`、表 `books`，并写入两本演示书。
 
-**3. 启动后端**
+**3. 配置密码**
+
+把 `config.example.py` 复制一份，改名成 `config.py`，然后把里面的密码改成你的 MySQL root 密码：
+
+```python
+MYSQL_PASSWORD = "你的密码"
+```
+
+`config.py` 已经加进 `.gitignore`，不会上传到仓库。
+
+**4. 启动后端**
 
 ```bash
 cd api练习
 python app.py
 ```
 
-看到 `Uvicorn running on http://127.0.0.1:8000` 就是起来了（这个窗口不要关）。
+看到 `Uvicorn running on http://127.0.0.1:8000` 就是起来了（这个窗口别关）。
 
-**4. 打开前端**
+**5. 打开前端**
 
 用浏览器打开 `html练习/form.html`，或者用 VSCode 的 Live Server。
 
@@ -74,18 +90,18 @@ FastAPI 自动生成，可以直接在上面点着测试每个接口。
 ## 目录结构
 
 ```
+init_mysql.py        MySQL 建库脚本（只需跑一次）
+config.example.py    密码模板（复制成 config.py 再改）
+config.py            真实密码（不进仓库）
+
 api练习/
-  app.py       后端，9 个接口
-  db.py        建库脚本（只需跑一次）
-  books.db     数据库
+  app.py          后端，9 个接口
+  books.db        旧版 SQLite 数据（已不再使用，留作备份）
+  db.py           旧版 SQLite 建库脚本（已废弃）
 
 html练习/
-  form.html    前端页面（借书表单 + 图书列表）
+  form.html       前端页面（借书表单 + 图书列表）
 ```
-
-## 说明
-
-学习项目，边学边做。数据用 SQLite，后续计划换成 MySQL。
 
 ## 踩过的坑
 
@@ -93,3 +109,8 @@ html练习/
 - 路由顺序：`/books/available` 必须写在 `/books/{isbn}` 之前，否则被通配路径截胡
 - 异常时没关数据库连接 → 文件被锁住，后面的请求全部卡死
 - 单个元素的元组要带逗号：`(isbn,)`
+- SQLite 换 MySQL：占位符从 `?` 变成 `%s`，游标要加 `dictionary=True`
+
+## 数据说明
+
+最初用 SQLite，后来换成了 MySQL。换的过程中**业务逻辑一行没动**，只改了四样：import、连接函数、游标参数、占位符。

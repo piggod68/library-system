@@ -9,3 +9,6 @@ books_备份.db
 Gradeofcourse/
 图书管理系统_代码/
 test.py/
+
+# 数据库密码，绝不进仓库
+config.py
