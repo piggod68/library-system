@@ -109,13 +109,32 @@ def search(keyword: str):
 def  create_book(book: BookIn):
     conn = 打开数据库()
     cur = conn.cursor() 
-    cur.execute(
-        "INSERT INTO books (isbn,title,stock) VALUES (?, ?, ?)",
-        (book.isbn,book.title,book.stock),
-    )
-    conn.commit()
+    try:
+        cur.execute(
+            "INSERT INTO books (isbn,title,stock) VALUES (?, ?, ?)",
+            (book.isbn,book.title,book.stock),
+       )
+        conn.commit()
+    except Exception as e:
+        conn.close()
+        return {"ok":False,"msg":f"新增失败： 《{book.title}》"}
     conn.close()
     return {"ok":True,"msg":f"新增成功： 《{book.title}》"}
+
+@app.delete("/books/{isbn}")
+def delete_book(isbn: str):
+    conn = 打开数据库()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM books WHERE isbn = ?",(isbn,))
+
+    if cur.rowcount == 0:
+        conn.close()
+        return {"ok": False,"msg":"没有这本书"}
+
+    conn.commit()
+    conn.close()
+    return {"ok": True,"msg":"删除成功"}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
