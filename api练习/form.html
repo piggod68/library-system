@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>借书</title>
+<style>
+    body {
+        font-family:"Microsoft YaHei", sans-serif;
+        max-width: 420px;
+        margin: 40px auto;
+        padding: 0 16px;
+        color: #a20505;
+    }
+    h1 { font-size: 50px;color: #999c18; }
+    label { display: inline-block; width: 78px; color: #555; }
+  input, textarea {
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 200px;
+    font-size: 14px;
+  }
+  button {
+    padding: 8px 20px;
+    background: #17365D;
+    color: #fff;
+    border: none;
+    border-radius: 90px;
+    cursor: pointer;
+  }
+  h2 { font-size: 20px; margin-top: 32px; }
+  #bookList { list-style: none; padding: 0; }
+  #bookList li {
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    color: #333;
+    font-size: 14px;
+  }
+</style>
+
+</head>
+<body>
+    <h1>借书</h1>
+    <form id="borrowFrom">
+        <p>
+            <label for="isbn">书号：</label>
+            <input id="isbn" name="isbn" type="text" required placeholder="例如: a001">
+        </p>
+        <p>
+        <label for="reader">读者姓名</label>
+            <input id="reader" name="reader" type="text" required>
+        </p>
+        <p>
+            <label for="date">借书日期</label>
+            <input id="date" name="date" type="date">
+        </p>
+        <p>
+            <label for="desc">备注</label>
+            <textarea id="desc" name="desc" rows="3"></textarea>
+        </p>
+        <button type="submit">借出</button>
+        <button type="button" id="returnBtn">还书</button>
+    </form>
+    <p id="result"></p>
+
+    <h2>图书列表</h2>`
+    <ul id="bookList"></ul>
+
+    <script>
+        const from = document.getElementById("borrowFrom");
+        const result = document.getElementById("result");
+
+        async function loadBooks() {
+            const res = await fetch("/books");
+            const data = await res.json();
+            let html = "";
+            for (const b of data) {
+                html = html + "<li>" + b.title + " —— 库存 " + b.stock + " 本</li>";
+            }
+            document.getElementById("bookList").innerHTML = html;
+        }
+
+        from.addEventListener("submit", async function(e){
+            e.preventDefault();
+            const isbn = document.getElementById("isbn").value;
+            const res = await fetch("/borrow/" + isbn, {
+                method: "POST"
+            });
+            const data = await res.json();
+            result.textContent = data.msg;
+            loadBooks();
+        })
+
+        const returnBtn = document.getElementById("returnBtn");
+
+        returnBtn.addEventListener("click", async function(){
+            const isbn = document.getElementById("isbn").value;
+            const res = await fetch("/return/" + isbn, {
+                method: "POST"
+            })
+            const data = await res.json();
+            result.textContent = data.msg;
+            loadBooks();
+        })
+
+        loadBooks();
+    </script>
+</body>
+</html>

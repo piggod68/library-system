@@ -81,6 +81,33 @@ python app.py
 
 用浏览器打开 `html练习/form.html`，或者用 VSCode 的 Live Server。
 
+## 页面访问方式
+
+**推荐：直接访问后端**
+
+```
+http://127.0.0.1:8000/
+```
+
+后端已经把 `form.html` 一起发出去了（`@app.get("/")` 返回 `FileResponse`），页面和接口**同源**，不需要额外开前端服务，也不用担心跨域。
+
+**另一种：单独打开页面文件**
+
+用浏览器打开 `html练习/form.html`（这个版本里的请求地址写的是完整的 `http://127.0.0.1:8000`）。
+
+## 部署
+
+临时给外网访问：用 [cpolar](https://www.cpolar.com/) 内网穿透。
+
+```bash
+cpolar authtoken <你的token>   # 只需一次
+cpolar http 8000               # 每次开机执行
+```
+
+会得到一个 `https://xxxx.cpolar.top` 的公网地址，别人打开就能用。
+
+注意：免费版网址每次重启会变，且电脑必须开着。
+
 ## 接口文档
 
 启动后访问 http://127.0.0.1:8000/docs

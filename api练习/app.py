@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 import uvicorn
 import mysql.connector
+from fastapi.responses import FileResponse
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import MYSQL_PASSWORD
@@ -142,6 +143,10 @@ def delete_book(isbn: str):
     conn.commit()
     conn.close()
     return {"ok": True,"msg":"删除成功"}
+
+@app.get("/")
+def index():
+    return FileResponse("form.html")
 
 
 if __name__ == "__main__":
