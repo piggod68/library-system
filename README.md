@@ -16,8 +16,9 @@
 - 按书号查一本
 - 按书名模糊搜索
 - 只看有库存的书
-- 借书（库存 -1）
-- 还书（库存 +1）
+- 借书（库存 -1，同时写一条借阅记录）
+- 还书（按记录编号还，标记已还，库存 +1）
+- 查看借阅记录（谁借了什么、还了没）
 - 新增图书（Pydantic 自动校验）
 - 删除图书
 
@@ -32,8 +33,9 @@
 | GET | `/search/{keyword}` | 按书名模糊搜 |
 | POST | `/books` | 新增图书（请求体） |
 | DELETE | `/books/{isbn}` | 删除图书 |
-| POST | `/borrow/{isbn}` | 借书 |
-| POST | `/return/{isbn}` | 还书 |
+| GET | `/records` | 借阅记录（JOIN books 带出书名） |
+| POST | `/borrow/{isbn}` | 借书，请求体 `{"reader": "姓名"}` |
+| POST | `/return/{record_id}` | 还书，按记录编号 |
 
 ## 前置要求
 
@@ -56,7 +58,7 @@ pip install fastapi uvicorn mysql-connector-python
 python init_mysql.py
 ```
 
-会创建数据库 `library`、表 `books`，并写入两本演示书。
+会创建数据库 `library`、两张表（`books` 书目、`records` 借阅记录），并写入两本演示书。
 
 **3. 配置密码**
 

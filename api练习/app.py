@@ -2,8 +2,6 @@ from fastapi import FastAPI
 import uvicorn
 import mysql.connector
 from fastapi.responses import FileResponse
-import sys, os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import MYSQL_PASSWORD
 from pydantic import BaseModel
 
@@ -33,7 +31,9 @@ class BookIn(BaseModel):
     isbn: str
     title: str
     stock: int
-  
+
+class BorrowIn(BaseModel):
+    reader : str
 
 
 @app.get("/hello")
@@ -60,6 +60,21 @@ def get_available():
     conn.close()
     return rows
 
+@app.get("/records")
+def get_records():
+    conn = 打开数据库()
+    cur = conn.cursor(dictionary=True)
+    cur.execute("""
+        SELECT records.id, records.reader, records.borrow_date,
+               records.return_date, books.title
+        FROM records
+        JOIN books ON books.isbn = records.isbn
+        ORDER BY records.id DESC
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
 @app.get("/books/{isbn}")
 def get_book(isbn: str):
     conn = 打开数据库()
@@ -72,39 +87,63 @@ def get_book(isbn: str):
     return dict(row)
 
 @app.post("/borrow/{isbn}")
-def borrow(isbn: str):
+def borrow(isbn: str,data: BorrowIn):
     conn = 打开数据库()
     cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT stock FROM books WHERE isbn = %s", (isbn,))
-    row = cur.fetchone()
+    try:
+        cur.execute("SELECT stock FROM books WHERE isbn = %s", (isbn,))
+        row = cur.fetchone()
 
-    if row is None:
+        if row is None:
+           conn.close()
+           return {"ok": False, "msg": "没有这本书"}
+
+        if row["stock"] <= 0:
+           conn.close()
+           return {"ok": False, "msg": "这本书借完了"}
+
+        cur.execute("UPDATE books SET stock = stock - 1 WHERE isbn = %s", (isbn,))
+        cur.execute(
+            "INSERT INTO records (isbn, reader, borrow_date) VALUES (%s, %s, CURDATE())",
+            (isbn, data.reader),
+        )
+   
+        conn.commit()
+    except Exception :
+        conn.rollback()
         conn.close()
-        return {"ok": False, "msg": "没有这本书"}
+        return {"ok": False, "msg": "借阅失败"}
 
-    if row["stock"] <= 0:
-        conn.close()
-        return {"ok": False, "msg": "这本书借完了"}
-
-    cur.execute("UPDATE books SET stock = stock - 1 WHERE isbn = %s", (isbn,))
-    conn.commit()
     conn.close()
-    return {"ok": True, "msg": "借阅成功"}
-@app.post("/return/{isbn}")
-def return_book(isbn: str):
+    return {"ok": True, "msg":f"借阅成功,读者；{data.reader}"}
+@app.post("/return/{record_id}")
+def return_book(record_id: int):
     conn = 打开数据库()
     cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT stock FROM books WHERE isbn = %s", (isbn,))
-    row = cur.fetchone()
+    try:
+        cur.execute("SELECT * FROM records WHERE id = %s", (record_id,))
+        rec = cur.fetchone()
 
-    if row is None:
+        if rec is None:
+            conn.close()
+            return {"ok": False, "msg": "没有这条借阅记录"}
+
+        if rec ["return_date"] is not None:
+            conn.close()
+            return {"ok": False, "msg": "这本书已经归还过了"}
+
+        cur.execute("UPDATE records SET return_date = CURDATE() WHERE id = %s", (record_id,))
+        cur.execute("UPDATE books SET stock = stock + 1 WHERE isbn = %s", (rec["isbn"],))
+        conn.commit()
+    except Exception:
+        conn.rollback()
         conn.close()
-        return {"ok": False, "msg": "没有这本书"}
+        return {"ok": False, "msg": "归还失败,请重试"}
 
-    cur.execute("UPDATE books SET stock = stock + 1 WHERE isbn = %s", (isbn,))
-    conn.commit()
     conn.close()
-    return {"ok": True, "msg": "还书成功"}
+    return {"ok": True, "msg": f"归还成功,记录编号：{record_id}"}
+     
+       
 @app.get("/search/{keyword}")
 def search(keyword: str):
     conn = 打开数据库()

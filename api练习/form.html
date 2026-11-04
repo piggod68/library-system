@@ -38,6 +38,20 @@
     color: #333;
     font-size: 14px;
   }
+    #recordList { list-style: none; padding: 0; }
+    #recordList li {
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    color: #333;
+    font-size: 14px;
+  }
+  #recordList button {
+    padding: 4px 12px;
+    font-size: 12px;
+    margin-left: 8px;
+  }
 </style>
 
 </head>
@@ -61,14 +75,16 @@
             <textarea id="desc" name="desc" rows="3"></textarea>
         </p>
         <button type="submit">借出</button>
-        <button type="button" id="returnBtn">还书</button>
     </form>
     <p id="result"></p>
 
-    <h2>图书列表</h2>`
+    <h2>图书列表</h2>
     <ul id="bookList"></ul>
 
-    <script>
+    <h2>借阅记录</h2>
+    <ul id="recordList"></ul>
+
+        <script>
         const from = document.getElementById("borrowFrom");
         const result = document.getElementById("result");
 
@@ -82,30 +98,46 @@
             document.getElementById("bookList").innerHTML = html;
         }
 
+        async function loadRecords() {
+            const res = await fetch("/records");
+            const data = await res.json();
+            let html = "";
+            for (const r of data) {
+                let status = r.return_date
+                    ? "已还 " + r.return_date
+                    : "<button onclick='returnBook(" + r.id + ")'>还书</button>";
+                html = html + "<li>编号" + r.id + "　" + r.reader
+                     + "　借了《" + r.title + "》　" + r.borrow_date
+                     + "　" + status + "</li>";
+            }
+            document.getElementById("recordList").innerHTML = html;
+        }
+
+        async function returnBook(id) {
+            const res = await fetch("/return/" + id, { method: "POST" });
+            const data = await res.json();
+            result.textContent = data.msg;
+            loadBooks();
+            loadRecords();
+        }
+
         from.addEventListener("submit", async function(e){
             e.preventDefault();
             const isbn = document.getElementById("isbn").value;
+            const reader = document.getElementById("reader").value;
             const res = await fetch("/borrow/" + isbn, {
-                method: "POST"
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reader: reader })
             });
             const data = await res.json();
             result.textContent = data.msg;
             loadBooks();
-        })
-
-        const returnBtn = document.getElementById("returnBtn");
-
-        returnBtn.addEventListener("click", async function(){
-            const isbn = document.getElementById("isbn").value;
-            const res = await fetch("/return/" + isbn, {
-                method: "POST"
-            })
-            const data = await res.json();
-            result.textContent = data.msg;
-            loadBooks();
+            loadRecords();
         })
 
         loadBooks();
+        loadRecords();
     </script>
 </body>
 </html>
