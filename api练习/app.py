@@ -66,7 +66,8 @@ def get_records():
     cur = conn.cursor(dictionary=True)
     cur.execute("""
         SELECT records.id, records.reader, records.borrow_date,
-               records.return_date, books.title
+               records.return_date, books.title,
+               DATEDIFF(CURDATE(), records.borrow_date) AS days
         FROM records
         JOIN books ON books.isbn = records.isbn
         ORDER BY records.id DESC

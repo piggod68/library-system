@@ -98,21 +98,28 @@
             document.getElementById("bookList").innerHTML = html;
         }
 
-        async function loadRecords() {
+               async function loadRecords() {
             const res = await fetch("/records");
             const data = await res.json();
             let html = "";
             for (const r of data) {
-                let status = r.return_date
-                    ? "已还 " + r.return_date
-                    : "<button onclick='returnBook(" + r.id + ")'>还书</button>";
+                let extra = "";
+                let btn = "";
+                if (r.return_date) {
+                    extra = "已还 " + r.return_date;
+                } else if (r.days > 30) {
+                    extra = "<span style='color:#c00;font-weight:bold'>🔴 逾期 " + r.days + " 天</span>";
+                    btn = "<button onclick='returnBook(" + r.id + ")'>还书</button>";
+                } else {
+                    extra = "<span style='color:#2a7'>借出 " + r.days + " 天</span>";
+                    btn = "<button onclick='returnBook(" + r.id + ")'>还书</button>";
+                }
                 html = html + "<li>编号" + r.id + "　" + r.reader
                      + "　借了《" + r.title + "》　" + r.borrow_date
-                     + "　" + status + "</li>";
+                     + "　" + extra + "　" + btn + "</li>";
             }
             document.getElementById("recordList").innerHTML = html;
         }
-
         async function returnBook(id) {
             const res = await fetch("/return/" + id, { method: "POST" });
             const data = await res.json();
